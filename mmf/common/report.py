@@ -79,4 +79,10 @@ class Report(OrderedDict):
             if key not in self.keys():
                 raise AttributeError(key)
             if isinstance(self[key], torch.Tensor):
-                self[key] = torch.cat((self[key], report[key]), dim=0)
+                # Bugfix(self): Since we have big validation set
+                # we run oom on gpu if we store this on gpu
+                # hence .detach().cpu()
+                try:
+                    self[key] = torch.cat((self[key].detach().cpu(), report[key].detach().cpu()), dim=0)
+                except:
+                    import pdb;pdb.set_trace()

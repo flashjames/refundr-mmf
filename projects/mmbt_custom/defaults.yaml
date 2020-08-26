@@ -1,7 +1,11 @@
 model_config:
-  mmbt:
+  mmbt_custom:
+    training_head_type: classification
+    losses:
+    - type: cross_entropy
+
     # Either pretraining or classification
-    training_head_type: pretraining
+    #training_head_type: pretraining
     bert_model_name: bert-base-uncased
     direct_features_input: false
     freeze_text: false
@@ -13,7 +17,7 @@ model_config:
     # Dimension of the embedding finally returned by the text encoder
     text_hidden_size: 768
     # IMPORTANT: Used when classification head is activated
-    num_labels: 2
+    num_labels: 82947
     modal_encoder:
       type: resnet152
       params:
@@ -26,7 +30,7 @@ model_config:
     text_encoder:
       type: transformer
       params:
-        bert_model_name: ${model_config.mmbt.bert_model_name}
+        bert_model_name: bert-base-uncased
         # Options below can be overridden to update the bert configuration used
         # to initialize the bert encoder. If some option is missing or
         # if you are using an encoder different then BERT, add extra parameters
@@ -41,3 +45,46 @@ model_config:
         num_attention_heads: 12
         output_attentions: false
         output_hidden_states: false
+
+
+dataset_config:
+  mmbt_custom:
+    return_features_info: false
+    processors:
+      text_processor:
+        type: bert_tokenizer
+        params:
+          tokenizer_config:
+            type: bert-base-uncased
+            params:
+              do_lower_case: true
+          mask_probability: 0
+          max_seq_length: 256
+
+scheduler:
+  type: warmup_linear
+  params:
+    num_warmup_steps: 2000
+    num_training_steps: ${training.max_updates}
+
+optimizer:
+  type: adam_w
+  params:
+    lr: 1e-5
+    eps: 1e-8
+
+evaluation:
+  metrics:
+  - accuracy
+  
+training:
+  batch_size: 16
+  lr_scheduler: true
+  max_updates: 300000
+  early_stop:
+    criteria: nlvr2/accuracy
+    minimize: false
+
+checkpoint:
+  pretrained_state_mapping:
+    bert: bert

@@ -139,6 +139,7 @@ class ImageDatabase(torch.utils.data.Dataset):
             path = get_possible_image_paths(image)
 
             valid = self.is_valid_file(path) if self.is_valid_file is not None else True
+            
 
             if not valid:
                 continue
@@ -162,7 +163,7 @@ class ImageDatabase(torch.utils.data.Dataset):
         return {"images": loaded_images}
 
     def open_image(self, path):
-        return self.loader(path)
+        return self.loader(path+".jpeg")
 
     def _get_attrs(self, item):
         """Returns possible attribute that can point to image id

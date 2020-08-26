@@ -61,7 +61,6 @@ class TrainerTrainingLoopMixin(ABC):
                 self.profile("Batch load time")
                 self.current_iteration += 1
                 logger.debug(self.num_updates + 1)
-
                 self.run_training_batch(batch)
 
                 # Check if training should be stopped
@@ -98,13 +97,15 @@ class TrainerTrainingLoopMixin(ABC):
 
     def run_training_batch(self, batch: Tensor) -> None:
         # Train batch start callbacks
-        self.on_batch_start()
 
+        self.on_batch_start()
+        
         report = self._forward(batch)
         loss = self._extract_loss(report)
         self._backward(loss)
 
         should_log = False
+        #import pdb;pdb.set_trace()
         if self.num_updates % self.logistics_callback.log_interval == 0:
             should_log = True
             # Calculate metrics every log interval for debugging
@@ -114,11 +115,14 @@ class TrainerTrainingLoopMixin(ABC):
 
         # Train batch end callbacks
         self.on_batch_end(report=report, meter=self.meter, should_log=should_log)
+        
+
 
     def _forward(self, batch: Tensor) -> Dict[str, Any]:
         prepared_batch = self.dataset_loader.prepare_batch(batch)
         # Move the sample list to device if it isn't as of now.
         prepared_batch = to_device(prepared_batch, torch.device("cuda"))
+
         self.profile("Batch prepare time")
         # Arguments should be a dict at this point
         model_output = self.model(prepared_batch)
@@ -145,6 +149,7 @@ class TrainerTrainingLoopMixin(ABC):
 
     def _extract_loss(self, report: Dict[str, Any]) -> Tensor:
         loss_dict = report.losses
+ 
         loss = sum([loss.mean() for loss in loss_dict.values()])
         return loss
 

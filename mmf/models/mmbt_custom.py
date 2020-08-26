@@ -20,6 +20,7 @@ from mmf.modules.encoders import MultiModalEncoderBase
 from mmf.utils.checkpoint import load_pretrained_model
 from mmf.utils.configuration import get_mmf_cache_dir
 from mmf.utils.modeling import get_optimizer_parameters_for_bert
+#from mmf.modules.losses import MarginLoss
 
 
 # TODO: Remove after transformers package upgrade to 2.5
@@ -179,6 +180,7 @@ class MMBTModel(nn.Module):
 
         device = input_ids.device if input_ids is not None else inputs_embeds.device
 
+        """
         modal_embeddings = self.modal_encoder(
             input_modal,
             start_token=modal_start_tokens,
@@ -186,9 +188,10 @@ class MMBTModel(nn.Module):
             position_ids=modal_position_ids,
             token_type_ids=modal_token_type_ids,
         )
+        
 
         input_modal_shape = modal_embeddings.size()[:-1]
-
+        """
         if token_type_ids is None:
             token_type_ids = torch.ones(
                 input_txt_shape, dtype=torch.long, device=device
@@ -201,12 +204,15 @@ class MMBTModel(nn.Module):
             inputs_embeds=inputs_embeds,
         )
 
-        embedding_output = torch.cat([modal_embeddings, txt_embeddings], 1)
+        #import pdb;pdb.set_trace()
+        #embedding_output = torch.cat([modal_embeddings, txt_embeddings], 1)
+        embedding_output = txt_embeddings
 
         input_shape = embedding_output.size()[:-1]
 
         if attention_mask is None:
             attention_mask = torch.ones(input_shape, device=device)
+        """
         else:
             attention_mask = torch.cat(
                 [
@@ -215,15 +221,16 @@ class MMBTModel(nn.Module):
                 ],
                 dim=1,
             )
-
+        """
         if encoder_attention_mask is None:
             encoder_attention_mask = torch.ones(input_shape, device=device)
+        """
         else:
             encoder_attention_mask = torch.cat(
                 [torch.ones(input_modal_shape, device=device), encoder_attention_mask],
                 dim=1,
             )
-
+        """
         # We can provide a self-attention mask of dimensions
         # [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.
@@ -312,6 +319,7 @@ class MMBTModel(nn.Module):
         outputs = (sequence_output, pooled_output) + encoder_outputs[
             1:
         ]  # add hidden_states and attentions if they are here
+
         return outputs  # sequence_output, pooled_output, (hidden_states), (attentions)
 
     def get_input_embeddings(self):
@@ -327,6 +335,7 @@ class MMBTBase(MultiModalEncoderBase):
 
     def build(self):
         encoders = self._build_encoders(self.config)
+        
         text_encoder, modal_encoder = encoders[0], encoders[1]
         self._encoder_config = text_encoder.config
 
@@ -338,7 +347,36 @@ class MMBTBase(MultiModalEncoderBase):
 
         self.mmbt = MMBTModel(self._mmbt_config, text_encoder, modal_encoder)
 
+
     def forward(self, sample_list):
+        modal_start_token = None
+        if self.config.use_modal_start_token:
+            modal_start_token = sample_list.input_ids[:, 0].clone().detach()
+
+        modal_end_token = None
+        if self.config.use_modal_end_token:
+            modal_end_token = sample_list.input_ids[:, -1].clone().detach()
+
+        output = self.mmbt(
+            None,
+            input_ids=sample_list.input_ids,
+            modal_start_tokens=modal_start_token,
+            modal_end_tokens=modal_end_token,
+            attention_mask=sample_list.input_mask,
+            token_type_ids=sample_list.segment_ids,
+            modal_token_type_ids=None,
+            position_ids=None,
+            modal_position_ids=None,
+            head_mask=None,
+            inputs_embeds=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+        )
+
+        return output
+
+            
+    def forward_old(self, sample_list):
         if self._is_direct_features_input:
             input_modal = sample_list.image_feature_0
         else:
@@ -390,6 +428,7 @@ class MMBTForPreTraining(nn.Module):
 
         self.cls = deepcopy(pretraining_module.cls)
         self.loss_fct = nn.CrossEntropyLoss(ignore_index=-1)
+        #self.loss_margin_fct = MarginLoss()
         self.tie_weights()
 
     def tie_weights(self):
@@ -446,6 +485,8 @@ class MMBTForPreTraining(nn.Module):
             )
             output["losses"][f"{loss_key}/alignment_loss"] = alignment_loss
 
+        #self.loss_margin_fct(
+
         return output
 
 
@@ -457,6 +498,9 @@ class MMBTForClassification(nn.Module):
         self.encoder_config = self.bert.encoder_config
 
         self.dropout = nn.Dropout(self.encoder_config.hidden_dropout_prob)
+
+        #if self.config.num_labels
+        
         self.classifier = nn.Sequential(
             BertPredictionHeadTransform(self.encoder_config),
             nn.Linear(self.encoder_config.hidden_size, self.config.num_labels),
@@ -475,19 +519,20 @@ class MMBTForClassification(nn.Module):
 
         pooled_output = self.dropout(pooled_output)
         logits = self.classifier(pooled_output)
+        
         reshaped_logits = logits.contiguous().view(-1, self.config.num_labels)
         output["scores"] = reshaped_logits
 
         return output
 
 
-@registry.register_model("mmbt")
+@registry.register_model("mmbt_custom")
 class MMBT(BaseModel):
     def __init__(self, config):
         super().__init__(config)
 
     def build(self):
-        if False and self.config.training_head_type == "pretraining":
+        if self.config.training_head_type == "pretraining":
             self.model = MMBTForPreTraining(self.config)
         else:
             self.model = MMBTForClassification(self.config)
@@ -497,7 +542,7 @@ class MMBT(BaseModel):
                 p.requires_grad = False
 
         if self.config.freeze_complete_base or self.config.freeze_modal:
-            for p in self.model.bert.mmbt.modal_encoder.parameters():
+            for p in self.model.bert.mmbt.modal_encoder.parametevrs():
                 p.requires_grad = False
 
     # Backward compatibility for code from older mmbt
@@ -522,7 +567,8 @@ class MMBT(BaseModel):
         return "configs/models/mmbt/pretrain.yaml"
 
     def forward(self, sample_list):
-        return self.model(sample_list)
+        output = self.model(sample_list)
+        return output
 
     def get_optimizer_parameters(self, config):
         return get_optimizer_parameters_for_bert(self.model, config)

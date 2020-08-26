@@ -68,12 +68,13 @@ class MMIMDbImageDataset(MMFDataset):
         current_sample.text = processed_sentence["text"]
         if "input_ids" in processed_sentence:
             current_sample.update(processed_sentence)
-
+            
         if self._use_images is True:
             current_sample.image = self.image_db[idx]["images"][0]
+            
 
         processed = self.answer_processor({"answers": sample_info["genres"]})
         current_sample.answers = processed["answers"]
         current_sample.targets = processed["answers_scores"]
-
+        import pdb;pdb.set_trace()
         return current_sample

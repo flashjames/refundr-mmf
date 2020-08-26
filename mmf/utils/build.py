@@ -1,3 +1,4 @@
+
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import os
@@ -141,7 +142,7 @@ def build_dataloader_and_sampler(
     # assumption for now to not support single item based IterableDataset
     # as it will add unnecessary complexity and config parameters
     # to the codebase
-    if not isinstance(dataset_instance, torch.utils.data.IterableDataset):
+    if False and not isinstance(dataset_instance, torch.utils.data.IterableDataset):
         other_args = _add_extra_args_for_dataloader(dataset_instance, other_args)
 
     loader = torch.utils.data.DataLoader(

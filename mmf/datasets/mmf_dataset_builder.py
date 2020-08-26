@@ -93,7 +93,7 @@ class MMFDatasetBuilder(BaseDatasetBuilder):
             get_mmf_env("data_dir"), "datasets", dataset_name, dataset_variation
         )
         download_path = get_absolute_path(download_path)
-
+        #import pdb;pdb.set_trace()
         if not isinstance(resources, collections.abc.Mapping):
             self._download_resources(resources, download_path, version)
         else:
@@ -121,6 +121,7 @@ class MMFDatasetBuilder(BaseDatasetBuilder):
         self.config = config
         annotations = config.get("annotations", {}).get(dataset_type, [])
 
+        
         # User can pass a single string as well
         if isinstance(annotations, str):
             annotations = [annotations]

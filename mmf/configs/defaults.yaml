@@ -14,7 +14,7 @@ training:
     # and generating reports
     experiment_name: run
     # Maximum number of iterations the training will run
-    max_updates: 22000
+    max_updates: 100000
     # Maximum epochs in case you don't want to use max_updates
     # Can be mixed with max iterations, so it will stop whichever is
     # completed first. Default: null means epochs won't be used
@@ -41,9 +41,9 @@ training:
 
     # Size of each batch. If distributed or data_parallel
     # is used, this will be divided equally among GPUs
-    batch_size: 512
+    batch_size: 1
     # Number of workers to be used in dataloaders
-    num_workers: 4
+    num_workers: 0
     # Some datasets allow fast reading by loading everything in the memory
     # Use this to enable it
     fast_read: false
@@ -57,7 +57,7 @@ training:
     checkpoint_interval: 1000
     # This will evaluate evaluation metrics on whole validation set after
     # evaluation interval
-    evaluation_interval: 1000
+    evaluation_interval: 50000
     # Whether gradients should be clipped
     clip_gradients: false
     # Mode for clip norm

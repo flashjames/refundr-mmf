@@ -25,8 +25,8 @@ class TrainerEvaluationLoopMixin(ABC):
             self.model.eval()
             disable_tqdm = not use_tqdm or not is_master()
             combined_report = None
-
-            for batch in tqdm.tqdm(loader, disable=disable_tqdm):
+            for batch in tqdm.tqdm(loader, disable=False):
+                
                 report = self._forward(batch)
                 self.update_meter(report, meter)
 
@@ -44,7 +44,7 @@ class TrainerEvaluationLoopMixin(ABC):
 
             combined_report.metrics = self.metrics(combined_report, combined_report)
             self.update_meter(combined_report, meter, eval_mode=True)
-
+            
             # enable train mode again
             self.model.train()
 

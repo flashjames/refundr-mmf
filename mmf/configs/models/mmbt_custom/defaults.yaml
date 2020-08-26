@@ -1,5 +1,5 @@
 model_config:
-  mmbt:
+  mmbt_custom:
     # Either pretraining or classification
     training_head_type: pretraining
     bert_model_name: bert-base-uncased
