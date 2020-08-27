@@ -7,6 +7,7 @@ import csv
 from mmf.common.sample import Sample
 from mmf.datasets.base_dataset import BaseDataset
 from mmf.datasets.mmf_dataset import MMFDataset
+from pathlib import Path
 
 
 class MMFCustomDataset(BaseDataset):
@@ -16,7 +17,12 @@ class MMFCustomDataset(BaseDataset):
             "mmf_custom", config, dataset_type, *args, **kwargs
         )
         # self.dataset_type = dataset_type
-        fname = f"/home/prox/refundr/backend-web/scripts/product_pages_ml__{dataset_type}.csv"
+        file_ = f"./datasets/prisjakt/product_pages_ml__{dataset_type}.csv"
+        fname = f"/home/prox/refundr/backend-web/scripts/{file}"
+        my_file = Path(fname)
+        if not my_file.is_file():
+            fname = f"../{file}"
+
         with open(fname, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
 
@@ -41,7 +47,6 @@ class MMFCustomDataset(BaseDataset):
                     dct_meta_ids[unique_meta_id].append(row)
                 idx_to_index_target[i] = index_target
 
-        print(max_)
         self.idx_to_index_target = idx_to_index_target
         self.dct_meta_ids = dct_meta_ids   
         self.num_labels = len(dct_meta_ids.keys())

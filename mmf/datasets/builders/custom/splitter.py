@@ -61,7 +61,7 @@ def split_stratified_into_train_val_test(df_input, y,
 
 import pandas as pd
 
-fname = "/home/prox/refundr/backend-web/scripts/product_pages_ml.csv"
+fname = "./datasets/prisjakt/product_pages_ml.csv"
 df = pd.read_csv(fname)
 #
 grouped = df.groupby('meta_product_page__id')
