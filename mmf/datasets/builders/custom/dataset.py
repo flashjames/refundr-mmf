@@ -16,6 +16,7 @@ class MMFCustomDataset(BaseDataset):
         super().__init__(
             "mmf_custom", config, dataset_type, *args, **kwargs
         )
+        import pdb;pdb.set_trace()
         # self.dataset_type = dataset_type
         file_ = f"./datasets/prisjakt/product_pages_ml__{dataset_type}.csv"
         fname = f"/home/prox/refundr/backend-web/scripts/{file}"
